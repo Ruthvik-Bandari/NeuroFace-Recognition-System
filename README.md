@@ -362,7 +362,7 @@ This project is licensed under the MIT License. See the [LICENSE](LICENSE) file 
 **Ruthvik Bandari**
 
 - GitHub: [@Ruthvik-Bandari](https://github.com/Ruthvik-Bandari)
-- LinkedIn: [Connect with me](https://www.linkedin.com/in/ruthvik-nath-bandari-908b00247/)
+- LinkedIn: [Connect with me](https://www.linkedin.com/in/ruthvik-nath-bandari-908b00247)
 
 ---
 
