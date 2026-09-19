@@ -3,7 +3,7 @@
   <img src="https://img.shields.io/badge/OpenCV-4.5+-green?style=for-the-badge&logo=opencv&logoColor=white" alt="OpenCV">
   <img src="https://img.shields.io/badge/dlib-19.17-orange?style=for-the-badge" alt="dlib">
   <img src="https://img.shields.io/badge/Flask-2.0+-red?style=for-the-badge&logo=flask&logoColor=white" alt="Flask">
-  <img src="https://img.shields.io/badge/Deep%20Learning-ResNet-purple?style=for-the-badge" alt="Deep Learning">
+  <img src="https://img.shields.io/badge/Deep%20Learning-dlib%20ResNet--29-purple?style=for-the-badge" alt="Deep Learning">
 </p>
 
 <h1 align="center">🧠 NeuroFace Recognition System</h1>
@@ -29,6 +29,7 @@
 - [Project Structure](#-project-structure)
 - [How It Works](#-how-it-works)
 - [Screenshots](#-screenshots)
+- [Limitations](#limitations)
 - [Future Enhancements](#-future-enhancements)
 - [Contributing](#-contributing)
 - [License](#-license)
@@ -38,7 +39,7 @@
 
 ## 🎯 Overview
 
-**NeuroFace Recognition System** is a sophisticated deep learning based face recognition application developed as a final year undergraduate project. The system leverages dlib's ResNet model to generate 128 dimensional face embeddings, enabling accurate identification of multiple individuals in real time video streams.
+**NeuroFace Recognition System** is a sophisticated deep learning based face recognition application developed as a final year undergraduate project. The system uses dlib's pre-trained `dlib_face_recognition_resnet_model_v1`, a 29-layer ResNet variant, to generate 128-dimensional face embeddings, identifying multiple individuals in a real-time video stream.
 
 The primary use case is automated attendance management, eliminating the need for manual roll calls or card based systems. The system captures face data, extracts unique facial features, and matches them against a database to automatically record attendance with timestamps.
 
@@ -49,7 +50,7 @@ The primary use case is automated attendance management, eliminating the need fo
 | Feature | Description |
 |---------|-------------|
 | 🎭 **Multi Face Detection** | Simultaneously detect and recognize multiple faces in a single frame |
-| 🔐 **128D Face Embeddings** | Uses ResNet based deep learning model for accurate face encoding |
+| 🔐 **128D Face Embeddings** | dlib's 29-layer ResNet variant produces the descriptor |
 | 📊 **68 Point Facial Landmarks** | Precise facial feature detection using dlib's shape predictor |
 | ⚡ **Real Time Processing** | Live video stream processing with FPS monitoring |
 | 🖥️ **GUI Face Registration** | User friendly Tkinter interface for registering new faces |
@@ -110,7 +111,7 @@ The primary use case is automated attendance management, eliminating the need fo
 |-------|-------------|
 | **HOG Face Detector** | Histogram of Oriented Gradients for face detection |
 | **Shape Predictor 68** | 68 point facial landmark detection model |
-| **ResNet Face Recognition** | Deep residual network for 128D face encoding |
+| **`dlib_face_recognition_resnet_model_v1`** | dlib's **29-layer ResNet variant** (not ResNet-50) producing a 128-D face descriptor |
 
 ### Application Framework
 
@@ -274,7 +275,7 @@ For each detected face, the **68 point shape predictor** identifies key facial f
 - Jawline contours
 
 ### 3. Face Encoding
-The **ResNet based face recognition model** generates a **128 dimensional embedding vector** for each face. This compact representation captures the unique characteristics of each individual's face.
+The **dlib ResNet-based face recognition model** (29 layers) generates a **128-dimensional embedding vector** for each face. This compact representation captures the unique characteristics of each individual's face.
 
 ### 4. Face Matching
 Recognition is performed by computing the **Euclidean distance** between the current face encoding and all stored encodings. A match is declared if the distance is below the threshold (0.4).
@@ -289,7 +290,14 @@ if dist < 0.4:
 ```
 
 ### 5. Centroid Tracking
-For multi face scenarios, **centroid tracking** maintains face identity across frames by matching face positions between consecutive frames.
+
+This is the part worth reading. The system does **not** re-embed every frame. When the detected face
+*count* is unchanged between frames, recognition is skipped entirely and identities are carried
+forward by matching centroid positions with Euclidean distance. Full re-embedding runs only when the
+face count changes, or every `reclassify_interval = 10` frames while an unknown face is present.
+
+That is a deliberate compute-for-latency trade: embedding is the expensive step, and in a stable
+scene it is redundant work.
 
 ### 6. Attendance Recording
 Upon recognition, the system records attendance with:
@@ -297,7 +305,8 @@ Upon recognition, the system records attendance with:
 - Current time
 - Current date
 
-Duplicate entries for the same day are prevented through database constraints.
+Duplicate entries for the same day are impossible at the schema level: the table is created with
+`UNIQUE(name, date)`, backed by a read-before-write guard. All SQL is parameterised.
 
 ---
 
@@ -321,6 +330,20 @@ Duplicate entries for the same day are prevented through database constraints.
 ```
 [Screenshot: Flask web interface displaying attendance records]
 ```
+
+---
+
+## Limitations
+
+- **No recorded accuracy metrics.** The system has not been benchmarked; no precision, recall or
+  identification-rate figures exist for it.
+- **No automated tests.**
+- **Matching threshold is 0.4**, stricter than dlib's usual 0.6 recommendation. This reduces false
+  matches but will reject valid faces under pose or lighting shifts far from the enrolled images.
+- **Enrollment quality drives everything.** Embeddings are averaged over 5–10 captures per person;
+  fewer or less varied captures degrade recognition noticeably.
+- Pre-trained dlib models must be downloaded separately; they are not committed.
+- Designed for a single local camera, not for distributed or multi-camera deployment.
 
 ---
 
